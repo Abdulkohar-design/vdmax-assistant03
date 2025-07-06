@@ -1,0 +1,260 @@
+/* Import Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* CSS Variables untuk Tema Profesional */
+:root {
+    --bg-primary: #18181B; /* Latar belakang utama, sedikit lebih lembut dari hitam */
+    --bg-secondary: #27272A; /* Untuk elemen seperti bubble chat AI */
+    --bg-tertiary: #3F3F46; /* Untuk input field */
+    --accent-primary: #60A5FA; /* Biru cerah sebagai aksen */
+    --accent-hover: #93C5FD;
+    --text-primary: #F4F4F5; /* Teks utama */
+    --text-secondary: #A1A1AA; /* Teks pendukung, seperti placeholder */
+    --border-color: #3F3F46;
+}
+
+/* Reset dan Pengaturan Dasar */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Layout Utama */
+.chat-container {
+    width: 100%;
+    max-width: 800px;
+    height: 95vh;
+    max-height: 900px;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.25em;
+    font-weight: 600;
+}
+
+.chat-window {
+    flex-grow: 1;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Desain Pesan Chat */
+.message {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    max-width: 90%;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 500;
+    font-size: 0.9em;
+    flex-shrink: 0;
+    background-color: var(--bg-tertiary);
+}
+
+.ai-avatar { background-color: var(--accent-primary); color: var(--bg-primary); }
+.user-avatar { background-color: var(--bg-secondary); color: var(--text-primary); }
+
+.message-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    line-height: 1.6;
+}
+
+.ai-message { align-self: flex-start; }
+.ai-message .message-content { background-color: var(--bg-secondary); }
+
+.user-message { align-self: flex-end; flex-direction: row-reverse; }
+.user-message .message-content { background-color: var(--accent-primary); color: var(--bg-primary); }
+
+/* Styling untuk pesan sistem/status */
+.status-message {
+    font-style: italic;
+    color: var(--text-secondary);
+    width: 100%;
+    text-align: center;
+    font-size: 0.85em;
+    background: none;
+    padding: 0;
+}
+
+/* Styling untuk gambar yang diunggah */
+.uploaded-image {
+    max-width: 250px;
+    border-radius: 8px;
+    margin-top: 8px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+}
+
+/* Styling untuk Blok Kode (Markdown) */
+.message-content pre {
+    background-color: #111113;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+.message-content code {
+    font-family: 'Courier New', Courier, monospace;
+}
+.message-content p > code { /* Inline code */
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+
+/* Desain Form Input */
+.chat-form {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.input-group {
+    display: flex;
+    align-items: flex-end;
+    background-color: var(--bg-tertiary);
+    border-radius: 12px;
+    padding: 8px;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+.input-group:focus-within {
+    border-color: var(--accent-primary);
+}
+
+textarea {
+    flex-grow: 1;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    padding: 8px;
+    font-size: 1em;
+    font-family: 'Inter', sans-serif;
+    resize: none;
+    outline: none;
+    max-height: 150px;
+    line-height: 1.5;
+}
+textarea::placeholder {
+    color: var(--text-secondary);
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+.icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+#send-button {
+    background-color: var(--accent-primary);
+    color: var(--bg-primary);
+}
+#send-button:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Scrollbar Styling */
+.chat-window::-webkit-scrollbar { width: 8px; }
+.chat-window::-webkit-scrollbar-track { background: transparent; }
+.chat-window::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
+.chat-window::-webkit-scrollbar-thumb:hover { background: #52525B; }
+
+/* --- Tambahkan kode ini di bagian akhir file style.css --- */
+
+/* Image Preview Styling */
+#image-preview-container {
+    padding: 0 8px 8px 8px;
+    display: flex;
+}
+
+.image-preview-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.image-preview-thumbnail {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+}
+
+.remove-preview-button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--bg-primary);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-size: 14px;
+}
+.remove-preview-button:hover {
+    background-color: #ff4d4d;
+    color: white;
+}
