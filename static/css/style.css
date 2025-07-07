@@ -118,18 +118,21 @@ body {
 .chat-form-wrapper { width: 100%; padding: 16px 16px 24px; }
 .chat-form { max-width: 768px; margin: 0 auto; }
 
+/* --- GANTI SEMUA BLOK CSS UNTUK .input-group, textarea, #send-button DENGAN YANG INI --- */
+
 .input-group {
-    background-color: #40414F; /* Warna hitam/abu gelap polos */
-    border: 1px solid rgba(255, 255, 255, 0.25); /* Border tipis agar terlihat */
-    border-radius: 24px; /* Ini yang membuat bentuknya menjadi kapsul */
-    padding: 6px 6px 6px 12px;
+    background-color: #40414F;
+    border: 1px solid #565869;
+    border-radius: 1.5rem; /* Radius yang lebih besar untuk efek kapsul */
+    padding: 0.5rem 0.75rem 0.5rem 1rem; /* Atur padding agar pas */
     display: flex;
     align-items: center;
+    gap: 0.75rem; /* Jarak antar ikon dan textarea */
     transition: border-color 0.2s;
 }
 
 .input-group:focus-within {
-    border-color: rgba(255, 255, 255, 0.5);
+    border-color: #8E8EA0;
 }
 
 textarea {
@@ -137,14 +140,16 @@ textarea {
     border: none;
     background: none;
     color: var(--text-primary);
-    padding: 10px 8px;
-    font-size: 1em;
+    padding: 0;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
     resize: none;
     outline: none;
     max-height: 200px;
+    line-height: 1.5;
 }
 textarea::placeholder {
-    color: var(--text-secondary);
+    color: #8E8EA0;
 }
 
 .icon-button {
@@ -152,34 +157,31 @@ textarea::placeholder {
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 8px;
+    padding: 0;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: background-color 0.2s, color 0.2s;
+    width: 36px;
+    height: 36px;
 }
+
 .icon-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 #send-button {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    padding: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #8E8EA0;
+    border-radius: 0.75rem;
 }
+
 #send-button:not(:disabled) {
     background-color: #fff; /* Warna tombol kirim saat aktif */
     color: #000;
+    cursor: pointer;
 }
-#send-button svg {
-    stroke: #000;
-}
-#send-button:disabled svg {
-    stroke: var(--text-secondary);
-}
-
-.disclaimer { text-align: center; font-size: 0.75em; color: var(--text-secondary); margin-top: 16px; }
 
 /* Styling untuk Preview Gambar (tetap sama) */
 #image-preview-container { padding-bottom: 8px; }
