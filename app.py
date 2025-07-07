@@ -10,6 +10,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# Inisialisasi client OpenAI dengan base URL dan API Key Anda
 client = OpenAI(
     api_key=os.getenv("SUMOPOD_API_KEY"),
     base_url="https://ai.sumopod.com/v1"
@@ -18,9 +19,11 @@ client = OpenAI(
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def allowed_file(filename):
+    """Memeriksa apakah ekstensi file diizinkan."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_task_type(prompt: str, has_image: bool) -> str:
+    """Menggunakan model ringan sebagai router untuk mengklasifikasikan tugas."""
     if has_image:
         return "image_analysis"
     
@@ -49,10 +52,12 @@ def get_task_type(prompt: str, has_image: bool) -> str:
 
 @app.route('/')
 def index():
+    """Menampilkan halaman utama."""
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    """Menangani permintaan utama dari pengguna."""
     prompt = request.form.get('prompt', '')
     image_file = request.files.get('image')
     
@@ -74,6 +79,7 @@ def chat():
     return Response(generate(prompt, task_type, base64_image, mime_type), mimetype='text/plain')
 
 def generate(prompt, task_type, base64_image, mime_type):
+    """Fungsi streaming dengan pemetaan model dan prompt yang benar."""
     model_to_use = ""
     status_message = ""
     content_parts = []
@@ -81,8 +87,7 @@ def generate(prompt, task_type, base64_image, mime_type):
     if task_type == 'image_analysis':
         model_to_use = "gpt-4o"
         status_message = "Menganalisis gambar dengan Ahli Vision (gpt-4o)..."
-
-        # --- PERUBAHAN UTAMA: INTRUKSI MASTER BARU UNTUK OUTPUT NARATIF ---
+        
         user_focus_instruction = f"Jika pengguna memberikan permintaan spesifik, fokuskan deskripsi Anda pada hal tersebut. Permintaan pengguna: '{prompt}'" if prompt else ""
 
         narrative_analysis_prompt = f"""
@@ -95,4 +100,45 @@ def generate(prompt, task_type, base64_image, mime_type):
         - Deskripsi detail **pakaian** dan **aksesori**.
         - **Latar belakang**, **lingkungan**, dan **lokasi**.
         - **Suasana (mood)** dan **atmosfer** keseluruhan.
-        - **Gaya visual** (misalnya: photorealistic, sinematik, luk
+        - **Gaya visual** (misalnya: photorealistic, sinematik, lukisan cat minyak, anime, dll.).
+        - Detail teknis seperti **pencahayaan**, **komposisi**, dan **sudut pandang kamera**.
+
+        {user_focus_instruction}
+
+        Sekarang, analisis gambar tersebut dan hasilkan paragraf deskriptifnya.
+        """
+        content_parts.append({"type": "text", "text": narrative_analysis_prompt})
+
+    elif task_type == 'coding':
+        model_to_use = "gpt-4.1"
+        status_message = "Mendelegasikan ke Ahli Coding (gpt-4.1)..."
+        content_parts.append({"type": "text", "text": prompt})
+    else: # general_chat
+        model_to_use = "gpt-4o-mini"
+        status_message = "Menyiapkan jawaban (gpt-4o-mini)..."
+        content_parts.append({"type": "text", "text": prompt})
+
+    if base64_image and mime_type:
+        content_parts.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
+        })
+    
+    yield f"*{status_message}*\n\n"
+    
+    messages = [{"role": "user", "content": content_parts}]
+
+    try:
+        print(f"▶️ Memanggil model spesialis: {model_to_use}")
+        # Panggil API tanpa parameter 'temperature' untuk memastikan kompatibilitas
+        stream = client.chat.completions.create(
+            model=model_to_use, messages=messages, stream=True
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content is not None:
+                yield chunk.choices[0].delta.content
+    except Exception as e:
+        yield f"\n\nTerjadi error saat menghubungi AI: {str(e)}"
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
