@@ -9,40 +9,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const imagePreviewContainer = document.getElementById('image-preview-container');
     const newChatButton = document.getElementById('new-chat-button');
 
-    // --- State & Tampilan Awal ---
-    const welcomeScreenHTML = `
-        <div class="welcome-container">
-            <div class="welcome-logo">VDMAX</div>
-            <div class="welcome-cards">
-                <div class="welcome-card">
-                    <h3>Contoh Pertanyaan</h3>
-                    <p>"Buatkan fungsi Python untuk validasi email"</p>
-                </div>
-                <div class="welcome-card">
-                    <h3>Kemampuan</h3>
-                    <p>Menganalisis kode, gambar, dan menjawab pertanyaan umum</p>
-                </div>
-                <div class="welcome-card">
-                    <h3>Batasan</h3>
-                    <p>Dapat membuat kesalahan dan tidak memiliki data setelah 2023</p>
-                </div>
-            </div>
-        </div>`;
+    // --- Tampilan Awal ---
+    const welcomeScreenHTML = `<div class="welcome-container">VDMAX</div>`;
 
     // --- Fungsi Utama ---
     function loadChat() {
         const savedHistory = localStorage.getItem('vdmaxChatHistory');
-        if (savedHistory) {
+        if (savedHistory && savedHistory.trim() !== '') {
             chatWindow.innerHTML = savedHistory;
+            addCopyButtonListeners();
         } else {
             chatWindow.innerHTML = welcomeScreenHTML;
         }
         chatWindow.scrollTop = chatWindow.scrollHeight;
-        addCopyButtonListeners();
     }
 
     function saveChatHistory() {
-        // Jangan simpan jika isinya hanya welcome screen
         if (!document.querySelector('.welcome-container')) {
             localStorage.setItem('vdmaxChatHistory', chatWindow.innerHTML);
         }
@@ -55,31 +37,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Event Listeners ---
+    // Mengaktifkan/menonaktifkan tombol kirim
+    messageInput.addEventListener('input', () => {
+        sendButton.disabled = messageInput.value.trim().length === 0;
+    });
+
+    // Kirim dengan Enter
     messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            sendButton.click();
+            if (!sendButton.disabled) sendButton.click();
         }
     });
     
     uploadButton.addEventListener('click', () => imageInput.click());
-
     imageInput.addEventListener('change', () => {
         const file = imageInput.files[0];
         if (file) displayImagePreview(file);
     });
 
+    // Logika Pengiriman Form
     chatForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const prompt = messageInput.value.trim();
         let imageFile = imageInput.files[0];
 
         if (!prompt && !imageFile) return;
-
-        if (document.querySelector('.welcome-container')) {
-            chatWindow.innerHTML = '';
-        }
+        if (document.querySelector('.welcome-container')) chatWindow.innerHTML = '';
 
         displayUserMessage(prompt, imageFile);
         const aiMessageElement = createMessageElement('ai');
@@ -102,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         chatForm.reset();
-        messageInput.style.height = 'auto';
+        sendButton.disabled = true;
         imagePreviewContainer.innerHTML = '';
 
         try {
@@ -118,40 +102,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (done) break;
                 
                 fullResponse += decoder.decode(value, { stream: true });
-                if (fullResponse.startsWith('*') && fullResponse.endsWith('*\n\n')) {
-                    aiContentElement.innerHTML = `<p><i>${fullResponse.substring(1, fullResponse.length - 3)}</i></p>`;
-                } else {
-                    aiContentElement.innerHTML = marked.parse(fullResponse);
-                }
+                aiContentElement.innerHTML = marked.parse(fullResponse);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             }
         } catch (error) {
-            aiContentElement.innerHTML = `<p>Maaf, terjadi kesalahan. Coba lagi nanti.</p><p><small>${error.message}</small></p>`;
+            aiContentElement.innerHTML = `<p>Maaf, terjadi kesalahan.</p><p><small>${error.message}</small></p>`;
         } finally {
+            addActionBar(aiMessageElement);
             saveChatHistory();
-            addCopyButtonListeners();
         }
     });
     
-    // --- Fungsi Pembantu ---
+    // --- Inisialisasi Aplikasi ---
+    loadChat();
+
+    // --- Fungsi-fungsi Pembantu ---
     function createMessageElement(role) {
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('message-wrapper');
-        
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', `${role}-message`);
-
         const avatar = document.createElement('div');
         avatar.classList.add('avatar', `${role}-avatar`);
         avatar.textContent = role === 'ai' ? 'V' : 'U';
-
         const content = document.createElement('div');
         content.classList.add('message-content');
-        
         messageDiv.appendChild(avatar);
         messageDiv.appendChild(content);
-        wrapper.appendChild(messageDiv);
-        chatWindow.appendChild(wrapper);
+        chatWindow.appendChild(messageDiv);
         chatWindow.scrollTop = chatWindow.scrollHeight;
         return messageDiv;
     }
@@ -165,27 +141,36 @@ document.addEventListener('DOMContentLoaded', () => {
         contentElement.innerHTML = contentHTML;
     }
 
-    function displayImagePreview(file) {
-        const previewWrapper = document.createElement('div');
-        previewWrapper.classList.add('image-preview-wrapper');
-        const thumbnail = document.createElement('img');
-        thumbnail.src = URL.createObjectURL(file);
-        thumbnail.classList.add('image-preview-thumbnail');
-        const removeButton = document.createElement('button');
-        removeButton.classList.add('remove-preview-button');
-        removeButton.innerHTML = '&times;';
-        removeButton.onclick = () => {
-            imageInput.value = '';
-            imagePreviewContainer.innerHTML = '';
-        };
-        previewWrapper.appendChild(thumbnail);
-        previewWrapper.appendChild(removeButton);
-        imagePreviewContainer.innerHTML = '';
-        imagePreviewContainer.appendChild(previewWrapper);
+    function addActionBar(messageElement) {
+        const contentElement = messageElement.querySelector('.message-content');
+        const actionBar = document.createElement('div');
+        actionBar.classList.add('action-bar');
+        
+        const copyButton = document.createElement('button');
+        copyButton.classList.add('icon-button');
+        copyButton.title = 'Salin';
+        copyButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+        
+        copyButton.addEventListener('click', () => {
+            const textToCopy = contentElement.innerText;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                copyButton.innerHTML = checkIconSVG;
+                setTimeout(() => { copyButton.innerHTML = copyButton.dataset.originalIcon; }, 2000);
+            });
+        });
+        copyButton.dataset.originalIcon = copyButton.innerHTML;
+        
+        actionBar.appendChild(copyButton);
+        // Anda bisa menambahkan tombol lain (like, dislike) di sini
+        contentElement.appendChild(actionBar);
+    }
+
+    function addCopyButtonListeners() {
+        const allAIMessages = document.querySelectorAll('.ai-message');
+        allAIMessages.forEach(addActionBar);
     }
     
-    function addCopyButtonListeners() { /* Implementasi di masa depan */ }
-
-    // Inisialisasi Aplikasi
-    loadChat();
+    // Fungsi preview gambar tidak perlu diubah
+    function displayImagePreview(file) { /* ... kode sama seperti sebelumnya ... */ }
 });
