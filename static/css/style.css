@@ -112,23 +112,77 @@ body {
 }
 .action-bar .icon-button:hover { opacity: 1; background-color: var(--input-bg); }
 
+/* --- GANTI BLOK CSS UNTUK FORM INPUT DENGAN YANG INI --- */
+
 /* Form Input */
-.chat-form-wrapper { width: 100%; padding: 24px 16px; }
+.chat-form-wrapper { width: 100%; padding: 16px 16px 24px; }
 .chat-form { max-width: 768px; margin: 0 auto; }
+
 .input-group {
-    background-color: var(--input-bg);
-    border: 1px solid var(--text-secondary);
-    border-radius: 12px;
-    padding: 4px 8px 4px 16px;
+    background-color: #40414F; /* Warna hitam/abu gelap polos */
+    border: 1px solid rgba(255, 255, 255, 0.25); /* Border tipis agar terlihat */
+    border-radius: 24px; /* Ini yang membuat bentuknya menjadi kapsul */
+    padding: 6px 6px 6px 12px;
     display: flex;
     align-items: center;
+    transition: border-color 0.2s;
 }
-textarea { flex-grow: 1; border: none; background: none; color: var(--text-primary); padding: 12px 8px; font-size: 1em; resize: none; outline: none; max-height: 200px; }
-#send-button { background-color: var(--text-secondary); border-radius: 8px; padding: 6px; }
-#send-button:not(:disabled) { background-color: #10A37F; cursor: pointer; }
-#send-button svg { stroke: #343541; }
+
+.input-group:focus-within {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+textarea {
+    flex-grow: 1;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    padding: 10px 8px;
+    font-size: 1em;
+    resize: none;
+    outline: none;
+    max-height: 200px;
+}
+textarea::placeholder {
+    color: var(--text-secondary);
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+.icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#send-button {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 8px;
+}
+#send-button:not(:disabled) {
+    background-color: #fff; /* Warna tombol kirim saat aktif */
+    color: #000;
+}
+#send-button svg {
+    stroke: #000;
+}
+#send-button:disabled svg {
+    stroke: var(--text-secondary);
+}
+
 .disclaimer { text-align: center; font-size: 0.75em; color: var(--text-secondary); margin-top: 16px; }
 
-/* Preview Gambar */
+/* Styling untuk Preview Gambar (tetap sama) */
 #image-preview-container { padding-bottom: 8px; }
-.image-preview-wrapper, .image-preview-thumbnail, .remove-preview-button { /* Styling sama seperti sebelumnya */ }
+.image-preview-wrapper { position: relative; display: inline-block; }
+.image-preview-thumbnail { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
+.remove-preview-button { position: absolute; top: -5px; right: -5px; background: #202123; color: white; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; }
