@@ -258,3 +258,43 @@ textarea::placeholder {
     background-color: #ff4d4d;
     color: white;
 }
+/* --- Tambahkan kode ini di bagian akhir file style.css --- */
+
+/* Copy Button Styling */
+.message {
+    position: relative; /* Diperlukan agar tombol bisa diposisikan */
+}
+
+.copy-button {
+    position: absolute;
+    bottom: 8px;
+    right: -45px; /* Posisikan di luar bubble chat */
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0; /* Sembunyikan secara default */
+    transition: opacity 0.2s, background-color 0.2s;
+}
+
+.ai-message:hover .copy-button {
+    opacity: 1; /* Tampilkan saat mouse hover di pesan AI */
+}
+
+.copy-button:hover {
+    background-color: var(--accent-primary);
+}
+
+.copy-button svg {
+    stroke: var(--text-secondary);
+    transition: stroke 0.2s;
+}
+
+.copy-button:hover svg {
+    stroke: var(--bg-primary);
+}
