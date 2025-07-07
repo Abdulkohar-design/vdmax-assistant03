@@ -82,55 +82,17 @@ def generate(prompt, task_type, base64_image, mime_type):
         model_to_use = "gpt-4o"
         status_message = "Menganalisis gambar dengan Ahli Vision (gpt-4o)..."
 
-        # --- PERUBAHAN UTAMA: INTRUKSI MASTER BARU UNTUK OUTPUT TERSTRUKTUR ---
-        # Jika ada prompt dari pengguna, AI akan menjawabnya. Jika tidak, AI hanya akan memberikan analisis.
-        final_instruction = f"Setelah selesai, jawab permintaan pengguna berikut: '{prompt}'" if prompt else "Setelah selesai, berikan hanya hasil analisis poin-per-poin di atas."
+        # --- PERUBAHAN UTAMA: INTRUKSI MASTER BARU UNTUK OUTPUT NARATIF ---
+        user_focus_instruction = f"Jika pengguna memberikan permintaan spesifik, fokuskan deskripsi Anda pada hal tersebut. Permintaan pengguna: '{prompt}'" if prompt else ""
 
-        structured_analysis_prompt = f"""
-        **Perintah Sistem:** Anda adalah analis visual yang sangat teliti. Analisis gambar yang diberikan dan jawab HANYA dalam format poin-per-poin (markdown list) berikut. Jangan gunakan format paragraf naratif.
+        narrative_analysis_prompt = f"""
+        **Perintah Sistem:** Anda adalah seorang direktur kreatif dan ahli konsep seni. Tugas Anda adalah menganalisis gambar yang diberikan dan menyatukan semua temuan Anda menjadi **satu paragraf deskriptif yang kaya dan menyatu**.
 
-        - **Subject:** [Deskripsikan subjek utama dan aksi yang sedang terjadi secara singkat]
-        - **Race/Ethnicity:** [Deskripsikan perkiraan ras atau etnis orang dalam gambar, jika dapat diidentifikasi secara visual dan relevan]
-        - **Pose:** [Deskripsikan pose atau posisi subjek]
-        - **Clothing:** [Rincikan pakaian yang dikenakan oleh setiap subjek]
-        - **Accessories:** [Sebutkan aksesori yang menonjol seperti jam tangan, kacamata, perhiasan, atau sertifikat]
-        - **Location:** [Deskripsikan latar belakang, lingkungan, dan lokasi kejadian]
-        - **Style:** [Deskripsikan gaya visual gambar: foto sinematik, candid, lukisan, desain UI, dll.]
-        - **Mood:** [Interpretasikan suasana atau mood keseluruhan dari gambar]
+        Jangan gunakan daftar atau poin-per-poin. Tulis jawaban Anda sebagai sebuah narasi yang mengalir.
 
-        {final_instruction}
-        """
-        content_parts.append({"type": "text", "text": structured_analysis_prompt})
-
-    elif task_type == 'coding':
-        model_to_use = "gpt-4.1"
-        status_message = "Mendelegasikan ke Ahli Coding (gpt-4.1)..."
-        content_parts.append({"type": "text", "text": prompt})
-    else: # general_chat
-        model_to_use = "gpt-4o-mini"
-        status_message = "Menyiapkan jawaban (gpt-4o-mini)..."
-        content_parts.append({"type": "text", "text": prompt})
-
-    if base64_image and mime_type:
-        content_parts.append({
-            "type": "image_url",
-            "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
-        })
-    
-    yield f"*{status_message}*\n\n"
-    
-    messages = [{"role": "user", "content": content_parts}]
-
-    try:
-        print(f"▶️ Memanggil model spesialis: {model_to_use}")
-        stream = client.chat.completions.create(
-            model=model_to_use, messages=messages, stream=True
-        )
-        for chunk in stream:
-            if chunk.choices[0].delta.content is not None:
-                yield chunk.choices[0].delta.content
-    except Exception as e:
-        yield f"\n\nTerjadi error saat menghubungi AI: {str(e)}"
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+        Pastikan paragraf Anda mencakup elemen-elemen berikut secara mulus:
+        - **Subjek utama**, **pose**, dan **aksinya**.
+        - Deskripsi detail **pakaian** dan **aksesori**.
+        - **Latar belakang**, **lingkungan**, dan **lokasi**.
+        - **Suasana (mood)** dan **atmosfer** keseluruhan.
+        - **Gaya visual** (misalnya: photorealistic, sinematik, luk
