@@ -298,3 +298,30 @@ textarea::placeholder {
 .copy-button:hover svg {
     stroke: var(--bg-primary);
 }
+/* --- Tambahkan kode ini di bagian akhir file style.css --- */
+
+/* Header Button Styling */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-button {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.header-button:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
