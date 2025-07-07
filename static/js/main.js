@@ -7,51 +7,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatWindow = document.getElementById('chat-window');
     const imagePreviewContainer = document.getElementById('image-preview-container');
 
-    // --- FITUR BARU: Kirim dengan Enter ---
+    // Kirim dengan Enter (Shift+Enter untuk baris baru)
     messageInput.addEventListener('keydown', (event) => {
-        // Jika Enter ditekan TANPA Shift, kirim pesan
         if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault(); // Mencegah baris baru
-            sendButton.click(); // Memicu klik pada tombol kirim
+            event.preventDefault();
+            sendButton.click();
         }
     });
     
-    // Memicu klik pada input file yang tersembunyi
     uploadButton.addEventListener('click', () => imageInput.click());
 
-    // --- FITUR BARU: Tampilkan Preview Gambar ---
+    // Tampilkan Preview Gambar
     imageInput.addEventListener('change', () => {
         const file = imageInput.files[0];
         if (file) {
-            // Tampilkan preview
-            const previewWrapper = document.createElement('div');
-            previewWrapper.classList.add('image-preview-wrapper');
-
-            const thumbnail = document.createElement('img');
-            thumbnail.src = URL.createObjectURL(file);
-            thumbnail.classList.add('image-preview-thumbnail');
-
-            const removeButton = document.createElement('button');
-            removeButton.classList.add('remove-preview-button');
-            removeButton.innerHTML = '&times;';
-            removeButton.title = 'Hapus Gambar';
-            removeButton.onclick = () => {
-                imageInput.value = ''; // Hapus file dari input
-                imagePreviewContainer.innerHTML = ''; // Hapus preview dari DOM
-            };
-
-            previewWrapper.appendChild(thumbnail);
-            previewWrapper.appendChild(removeButton);
-            imagePreviewContainer.innerHTML = ''; // Kosongkan dulu
-            imagePreviewContainer.appendChild(previewWrapper);
+            displayImagePreview(file);
         }
     });
 
-    // Logika pengiriman form yang sudah ada
+    // Logika Pengiriman Form
     chatForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const prompt = messageInput.value.trim();
-        const imageFile = imageInput.files[0];
+        let imageFile = imageInput.files[0];
 
         if (!prompt && !imageFile) return;
 
@@ -60,14 +38,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const aiMessageElement = createMessageElement('ai');
         const aiContentElement = aiMessageElement.querySelector('.message-content');
         
-        const formData = new FormData();
-        formData.append('prompt', prompt);
-        if (imageFile) formData.append('image', imageFile);
-
-        // Reset form dan preview SEGERA setelah data dikirim
+        // Reset form segera setelah pesan pengguna ditampilkan
         chatForm.reset();
         messageInput.style.height = 'auto';
         imagePreviewContainer.innerHTML = '';
+        
+        // --- LOGIKA KOMPRESI DIMULAI DI SINI ---
+        if (imageFile) {
+            const options = {
+                maxSizeMB: 2, // Paksa gambar maksimal 2MB
+                maxWidthOrHeight: 1920, // Ubah resolusi maksimal
+                useWebWorker: true
+            };
+            try {
+                console.log(`Ukuran gambar asli: ${(imageFile.size / 1024 / 1024).toFixed(2)} MB`);
+                aiContentElement.innerHTML = `<i>Mengompres gambar...</i>`; // Pesan sementara
+                imageFile = await imageCompression(imageFile, options); // Kompres gambar
+                console.log(`Ukuran gambar setelah kompresi: ${(imageFile.size / 1024 / 1024).toFixed(2)} MB`);
+            } catch (error) {
+                aiContentElement.innerHTML = `<p>Maaf, gagal mengompres gambar.</p>`;
+                console.error('Error saat kompresi:', error);
+                return;
+            }
+        }
+        // --- LOGIKA KOMPRESI SELESAI ---
+
+        const formData = new FormData();
+        formData.append('prompt', prompt);
+        if (imageFile) {
+            formData.append('image', imageFile, imageFile.name);
+        }
 
         try {
             const response = await fetch('/chat', {
@@ -75,12 +75,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) {
+                // Tangkap error 413 dan berikan pesan yang lebih ramah
+                if (response.status === 413) {
+                    throw new Error(`Ukuran file terlalu besar bahkan setelah kompresi.`);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullResponse = '';
 
+            // Proses streaming
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -101,11 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Fungsi-fungsi pembantu
     function displayUserMessage(prompt, imageFile) {
         const userMessageElement = createMessageElement('user');
         const contentElement = userMessageElement.querySelector('.message-content');
         let contentHTML = '';
-        if (prompt) contentHTML += `<p>${prompt.replace(/\n/g, '<br>')}</p>`; // ubah newline jadi <br>
+        if (prompt) contentHTML += `<p>${prompt.replace(/\n/g, '<br>')}</p>`;
         if (imageFile) contentHTML += `<img src="${URL.createObjectURL(imageFile)}" alt="Uploaded Image" class="uploaded-image">`;
         contentElement.innerHTML = contentHTML;
     }
@@ -123,6 +131,26 @@ document.addEventListener('DOMContentLoaded', () => {
         chatWindow.appendChild(messageWrapper);
         chatWindow.scrollTop = chatWindow.scrollHeight;
         return messageWrapper;
+    }
+    
+    function displayImagePreview(file) {
+        const previewWrapper = document.createElement('div');
+        previewWrapper.classList.add('image-preview-wrapper');
+        const thumbnail = document.createElement('img');
+        thumbnail.src = URL.createObjectURL(file);
+        thumbnail.classList.add('image-preview-thumbnail');
+        const removeButton = document.createElement('button');
+        removeButton.classList.add('remove-preview-button');
+        removeButton.innerHTML = '&times;';
+        removeButton.title = 'Hapus Gambar';
+        removeButton.onclick = () => {
+            imageInput.value = '';
+            imagePreviewContainer.innerHTML = '';
+        };
+        previewWrapper.appendChild(thumbnail);
+        previewWrapper.appendChild(removeButton);
+        imagePreviewContainer.innerHTML = '';
+        imagePreviewContainer.appendChild(previewWrapper);
     }
 
     messageInput.addEventListener('input', () => {
