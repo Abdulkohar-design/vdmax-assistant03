@@ -10,7 +10,6 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Inisialisasi client OpenAI dengan base URL dan API Key Anda
 client = OpenAI(
     api_key=os.getenv("SUMOPOD_API_KEY"),
     base_url="https://ai.sumopod.com/v1"
@@ -19,29 +18,22 @@ client = OpenAI(
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 
 def allowed_file(filename):
-    """Memeriksa apakah ekstensi file diizinkan."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# --- ROUTER DIUBAH UNTUK MENGGUNAKAN MODEL 'NANO' & TANPA IMAGE GENERATION ---
 def get_task_type(prompt: str, has_image: bool) -> str:
-    """
-    Menggunakan gpt-4.1-nano sebagai router super cepat untuk klasifikasi.
-    """
     if has_image:
         return "image_analysis"
-
-    # Sistem prompt disederhanakan, tanpa 'image_generation'
+    
     system_prompt = """
         You are a task classification expert. Analyze the user's prompt to determine the task type.
         Possible types are: 'coding' or 'general_chat'.
         Respond ONLY with a JSON object like {"task": "type"}.
-        - If the user asks to write, fix, explain, or refactor code in any programming language, classify it as 'coding'.
-        - Otherwise, classify it as 'general_chat'.
+        - If the user asks to write, fix, explain, or refactor code, classify as 'coding'.
+        - Otherwise, classify as 'general_chat'.
     """
     try:
-        print("🤖 Router (gpt-4.1-nano) sedang menentukan jenis tugas...")
         response = client.chat.completions.create(
-            model="gpt-4.1-nano", # Menggunakan model paling ringan untuk router
+            model="gpt-4.1-nano",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
@@ -51,21 +43,16 @@ def get_task_type(prompt: str, has_image: bool) -> str:
             response_format={"type": "json_object"}
         )
         task_data = json.loads(response.choices[0].message.content)
-        task = task_data.get("task", "general_chat")
-        print(f"✅ Tugas terdeteksi: {task}")
-        return task
-    except Exception as e:
-        print(f"⚠️ Gagal menentukan tugas, menggunakan default. Error: {e}")
+        return task_data.get("task", "general_chat")
+    except Exception:
         return "general_chat"
 
 @app.route('/')
 def index():
-    """Menampilkan halaman utama."""
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """Menangani permintaan utama dari pengguna."""
     prompt = request.form.get('prompt', '')
     image_file = request.files.get('image')
     
@@ -87,38 +74,54 @@ def chat():
     return Response(generate(prompt, task_type, base64_image, mime_type), mimetype='text/plain')
 
 def generate(prompt, task_type, base64_image, mime_type):
-    """
-    Fungsi streaming dengan pemetaan model yang baru.
-    """
     model_to_use = ""
     status_message = ""
-
-    # --- PEMETAAN MODEL BARU SESUAI PERMINTAAN ANDA ---
-    if task_type == 'coding':
-        model_to_use = "gpt-4.1"
-        status_message = "Mendelegasikan ke Ahli Coding (gpt-4.1)..."
-    elif task_type == 'image_analysis':
+    
+    content_parts = []
+    
+    # --- PERUBAHAN UTAMA DI SINI ---
+    # Logika untuk menyusun prompt berdasarkan jenis tugas
+    if task_type == 'image_analysis':
         model_to_use = "gpt-4o"
         status_message = "Menganalisis gambar dengan Ahli Vision (gpt-4o)..."
+
+        # Membuat "Instruksi Master" untuk analisis detail
+        detailed_analysis_prompt = f"""
+        **Perintah Sistem:** Anda adalah seorang analis visual kelas dunia. Sebelum menjawab, lakukan analisis gambar yang diberikan secara diam-diam dan mendalam dengan mengikuti langkah-langkah berikut:
+        1.  **Identifikasi Objek & Subjek Utama:** Apa atau siapa subjek utama dalam gambar?
+        2.  **Analisis Latar Belakang & Lingkungan:** Di mana lokasi gambar? Apa saja elemen pendukung di sekitarnya?
+        3.  **Detail Spesifik & Atribut:** Perhatikan warna dominan, tekstur, pencahayaan (pagi/siang/malam), ekspresi wajah, pakaian, dan detail kecil lainnya.
+        4.  **Komposisi & Gaya Visual:** Bagaimana elemen-elemen diatur dalam gambar? Apakah ini foto profesional, selfie, lukisan, diagram, atau desain UI?
+        5.  **Interpretasi Konteks & Suasana:** Apa suasana (mood) dari gambar ini (ceria, sedih, profesional)? Apa kira-kira cerita atau kejadian yang sedang berlangsung?
+
+        Setelah Anda memahami gambar secara menyeluruh berdasarkan analisis di atas, jawablah permintaan spesifik dari pengguna di bawah ini. Pastikan jawaban Anda kaya akan detail yang Anda temukan.
+
+        **Permintaan Pengguna:** "{prompt}"
+        """
+        content_parts.append({"type": "text", "text": detailed_analysis_prompt})
+
+    elif task_type == 'coding':
+        model_to_use = "gpt-4.1"
+        status_message = "Mendelegasikan ke Ahli Coding (gpt-4.1)..."
+        content_parts.append({"type": "text", "text": prompt})
     else: # general_chat
         model_to_use = "gpt-4o-mini"
         status_message = "Menyiapkan jawaban (gpt-4o-mini)..."
-
-    yield f"*{status_message}*\n\n"
-
-    # Menyiapkan payload untuk dikirim ke API
-    content_parts = []
-    if prompt:
         content_parts.append({"type": "text", "text": prompt})
+
+    # Tambahkan data gambar ke dalam payload jika ada
     if base64_image and mime_type:
         content_parts.append({
             "type": "image_url",
             "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
         })
     
+    # --- AKHIR DARI PERUBAHAN UTAMA ---
+
+    yield f"*{status_message}*\n\n"
+    
     messages = [{"role": "user", "content": content_parts}]
 
-    # Memanggil API dengan model yang sudah dipilih
     try:
         print(f"▶️ Memanggil model spesialis: {model_to_use}")
         stream = client.chat.completions.create(
