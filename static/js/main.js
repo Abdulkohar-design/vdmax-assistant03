@@ -36,11 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Mengganti confirm() dengan modal kustom
     newChatButton.addEventListener('click', () => {
-        if (confirm('Mulai percakapan baru? Riwayat saat ini akan dihapus.')) {
+        showCustomConfirm('Mulai percakapan baru? Riwayat saat ini akan dihapus.', () => {
             localStorage.removeItem('vdmaxChatHistory');
             loadChat();
-        }
+        });
     });
 
     // --- Event Listeners ---
@@ -85,10 +86,19 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('prompt', prompt);
         
         if (imageFile) {
-            const options = { maxSizeMB: 2, maxWidthOrHeight: 1920, useWebWorker: true };
+            // --- OPSI KOMPRESI YANG DIOPTIMALKAN ---
+            const options = {
+                maxSizeMB: 0.8, // Mengurangi dari 2MB menjadi 0.8MB (800KB)
+                maxWidthOrHeight: 1600, // Mengurangi dari 1920px menjadi 1600px
+                useWebWorker: true,
+                initialQuality: 0.9 // Tambahkan ini untuk kontrol kualitas awal
+            };
             try {
                 aiContentElement.innerHTML = `<p><i>Mengompres gambar...</i></p>`;
+                // Tambahkan spinner atau indikator loading yang lebih jelas di sini jika perlu
                 const compressedFile = await imageCompression(imageFile, options);
+                console.log(`Ukuran file asli: ${imageFile.size / 1024 / 1024} MB`);
+                console.log(`Ukuran file terkompresi: ${compressedFile.size / 1024 / 1024} MB`);
                 formData.append('image', compressedFile, compressedFile.name);
             } catch (error) {
                 aiContentElement.innerHTML = `<p>Maaf, gagal mengompres gambar.</p>`;
@@ -108,6 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullResponse = '';
+
+            // Hapus pesan "Mengompres gambar..." setelah streaming dimulai
+            aiContentElement.innerHTML = ''; 
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -163,16 +176,45 @@ document.addEventListener('DOMContentLoaded', () => {
         copyButton.innerHTML = copyIconSVG;
         
         copyButton.addEventListener('click', () => {
+            // Menggunakan document.execCommand('copy') sebagai fallback
             const textToCopy = contentElement.innerText;
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-                copyButton.innerHTML = checkIconSVG;
-                setTimeout(() => { copyButton.innerHTML = copyIconSVG; }, 2000);
-            });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showCopySuccess(copyButton, copyIconSVG);
+                }).catch(err => {
+                    console.error('Gagal menyalin menggunakan Clipboard API:', err);
+                    fallbackCopyToClipboard(textToCopy, copyButton, copyIconSVG);
+                });
+            } else {
+                fallbackCopyToClipboard(textToCopy, copyButton, copyIconSVG);
+            }
         });
         
         actionBar.appendChild(copyButton);
         contentElement.appendChild(actionBar);
+    }
+
+    function showCopySuccess(button, originalIcon) {
+        const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        button.innerHTML = checkIconSVG;
+        setTimeout(() => { button.innerHTML = originalIcon; }, 2000);
+    }
+
+    function fallbackCopyToClipboard(text, button, originalIcon) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed'; // Agar tidak mengganggu layout
+        textarea.style.left = '-9999px'; // Sembunyikan dari layar
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showCopySuccess(button, originalIcon);
+        } catch (err) {
+            console.error('Gagal menyalin menggunakan execCommand:', err);
+            // Optionally, show a message to the user that copying failed
+        }
+        document.body.removeChild(textarea);
     }
     
     function addCopyButtonListenersToAll() {
@@ -194,5 +236,61 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSendButtonState(); // Update tombol saat preview dihapus
         });
         imagePreviewContainer.appendChild(previewWrapper);
+    }
+
+    // --- Custom Modal (Pengganti confirm()) ---
+    function showCustomConfirm(message, onConfirm) {
+        // Buat elemen modal
+        const modalOverlay = document.createElement('div');
+        modalOverlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); display: flex;
+            justify-content: center; align-items: center; z-index: 1000;
+        `;
+
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: var(--input-bg); padding: 20px; border-radius: 10px;
+            text-align: center; color: var(--text-primary); max-width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        `;
+
+        const messageParagraph = document.createElement('p');
+        messageParagraph.textContent = message;
+        messageParagraph.style.marginBottom = '20px';
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'space-around';
+
+        const confirmButton = document.createElement('button');
+        confirmButton.textContent = 'Ya';
+        confirmButton.style.cssText = `
+            background-color: var(--accent-color); color: white;
+            border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;
+            font-weight: bold;
+        `;
+        confirmButton.addEventListener('click', () => {
+            onConfirm();
+            document.body.removeChild(modalOverlay);
+        });
+
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Batal';
+        cancelButton.style.cssText = `
+            background-color: var(--border-color); color: var(--text-primary);
+            border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;
+            font-weight: bold;
+        `;
+        cancelButton.addEventListener('click', () => {
+            document.body.removeChild(modalOverlay);
+        });
+
+        buttonContainer.appendChild(cancelButton);
+        buttonContainer.appendChild(confirmButton);
+        modalContent.appendChild(messageParagraph);
+        modalContent.appendChild(buttonContainer);
+        modalOverlay.appendChild(modalContent);
+        document.body.appendChild(modalOverlay);
     }
 });
