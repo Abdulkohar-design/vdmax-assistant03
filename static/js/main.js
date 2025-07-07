@@ -9,8 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const imagePreviewContainer = document.getElementById('image-preview-container');
     const newChatButton = document.getElementById('new-chat-button');
 
-    // --- Tampilan Awal ---
     const welcomeScreenHTML = `<div class="welcome-container">VDMAX</div>`;
+
+    // --- FUNGSI BARU UNTUK MENGONTROL TOMBOL KIRIM ---
+    function updateSendButtonState() {
+        const hasText = messageInput.value.trim().length > 0;
+        const hasImage = imageInput.files.length > 0;
+        sendButton.disabled = !hasText && !hasImage;
+    }
 
     // --- Fungsi Utama ---
     function loadChat() {
@@ -38,9 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Event Listeners ---
-    messageInput.addEventListener('input', () => {
-        sendButton.disabled = messageInput.value.trim().length === 0;
-    });
+    // Panggil updateSendButtonState setiap kali ada perubahan input
+    messageInput.addEventListener('input', updateSendButtonState);
+    imageInput.addEventListener('change', updateSendButtonState);
 
     messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -52,7 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadButton.addEventListener('click', () => imageInput.click());
     imageInput.addEventListener('change', () => {
         const file = imageInput.files[0];
-        if (file) displayImagePreview(file);
+        if (file) {
+            displayImagePreview(file);
+        } else {
+            // Jika pemilihan file dibatalkan, hapus preview
+            imagePreviewContainer.innerHTML = '';
+        }
     });
 
     // Logika Pengiriman Form
@@ -87,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         chatForm.reset();
-        sendButton.disabled = true;
+        updateSendButtonState(); // Update status tombol setelah reset
         imagePreviewContainer.innerHTML = '';
 
         try {
@@ -113,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    // Inisialisasi Aplikasi
     loadChat();
 
     // --- Fungsi Pembantu ---
@@ -179,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         previewWrapper.querySelector('.remove-preview-button').addEventListener('click', () => {
             imageInput.value = '';
             imagePreviewContainer.innerHTML = '';
+            updateSendButtonState(); // Update tombol saat preview dihapus
         });
         imagePreviewContainer.appendChild(previewWrapper);
     }
