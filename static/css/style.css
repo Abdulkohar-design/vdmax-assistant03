@@ -16,26 +16,27 @@ body {
     background-color: var(--main-bg);
     color: var(--text-primary);
     margin: 0;
-    overflow: hidden;
+    overflow: hidden; /* Mencegah scrollbar pada body */
 }
 
 .main-content {
     width: 100%;
-    height: 100vh;
+    height: 100vh; /* Menggunakan tinggi penuh viewport */
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center; /* Pusatkan konten secara horizontal */
 }
 
 /* Header */
 .app-header {
     width: 100%;
-    max-width: 768px;
-    padding: 12px 0;
+    max-width: 768px; /* Lebar maksimal untuk layar yang lebih besar */
+    padding: 12px 16px; /* Tambahkan padding horizontal untuk mobile */
     display: flex;
-    justify-content: flex-start; /* Ubah ke flex-start */
+    justify-content: flex-start;
     align-items: center;
-    flex-shrink: 0;
+    flex-shrink: 0; /* Mencegah header menyusut */
+    margin: 0 auto; /* Pusatkan header di layar yang lebih lebar */
 }
 .header-title {
     display: flex;
@@ -52,18 +53,20 @@ body {
 /* Area Chat */
 .chat-window {
     width: 100%;
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 0 16px;
+    flex-grow: 1; /* Memungkinkan jendela chat mengambil ruang yang tersedia */
+    overflow-y: auto; /* Mengaktifkan scrolling vertikal untuk pesan */
+    padding: 0 16px; /* Padding horizontal untuk mobile */
+    min-height: 0; /* Penting untuk item flex dengan overflow */
 }
 .welcome-container {
-    height: 100%;
+    height: 100%; /* Mengambil tinggi penuh chat-window saat tidak ada pesan */
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2.5em;
     font-weight: bold;
     color: rgba(255, 255, 255, 0.1);
+    text-align: center; /* Memastikan teks terpusat jika ada pemotongan baris */
 }
 
 /* Pesan Chat */
@@ -72,7 +75,7 @@ body {
     display: flex;
     gap: 20px;
     max-width: 768px;
-    margin: 0 auto;
+    margin: 0 auto; /* Pusatkan pesan di dalam chat-window */
 }
 .avatar {
     width: 32px;
@@ -101,7 +104,12 @@ body {
 .action-bar .icon-button:hover { opacity: 1; background-color: var(--input-bg); }
 
 /* Form Input */
-.chat-form-wrapper { width: 100%; padding: 16px 16px 24px; }
+.chat-form-wrapper {
+    width: 100%;
+    padding: 16px 16px 24px; /* Tambahkan padding horizontal untuk mobile */
+    flex-shrink: 0; /* Mencegah wrapper form menyusut */
+    margin: 0 auto; /* Pusatkan wrapper form di layar yang lebih lebar */
+}
 .chat-form { max-width: 768px; margin: 0 auto; }
 .input-group {
     background-color: var(--input-bg);
@@ -136,3 +144,16 @@ textarea::placeholder { color: #8E8EA0; }
 .image-preview-wrapper { position: relative; display: inline-block; }
 .image-preview-thumbnail { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
 .remove-preview-button { position: absolute; top: -5px; right: -5px; background: #202123; color: white; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; }
+
+/* Media queries untuk layar yang sangat kecil */
+@media (max-width: 480px) {
+    .app-header,
+    .chat-window,
+    .chat-form-wrapper {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    .message {
+        gap: 12px; /* Kurangi jarak untuk layar yang lebih kecil */
+    }
+}
