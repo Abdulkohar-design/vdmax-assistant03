@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Elemen DOM ---
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
     const imageInput = document.getElementById('image-input');
@@ -6,6 +7,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendButton = document.getElementById('send-button');
     const chatWindow = document.getElementById('chat-window');
     const imagePreviewContainer = document.getElementById('image-preview-container');
+    const clearChatButton = document.getElementById('clear-chat-button');
+
+    const initialAIMessage = `
+        <div class="message ai-message">
+            <div class="avatar ai-avatar">AI</div>
+            <div class="message-content">
+                <p>Halo! Saya VDMAX Asisten. Silakan ajukan pertanyaan, minta saya untuk membuat kode, atau analisis sebuah gambar.</p>
+            </div>
+        </div>`;
+
+    // --- FITUR BARU: Riwayat Percakapan ---
+    function saveChatHistory() {
+        localStorage.setItem('vdmaxChatHistory', chatWindow.innerHTML);
+    }
+
+    function loadChatHistory() {
+        const savedHistory = localStorage.getItem('vdmaxChatHistory');
+        if (savedHistory) {
+            chatWindow.innerHTML = savedHistory;
+        } else {
+            chatWindow.innerHTML = initialAIMessage;
+        }
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // --- FITUR BARU: Tombol Hapus Percakapan ---
+    clearChatButton.addEventListener('click', () => {
+        if (confirm('Apakah Anda yakin ingin menghapus seluruh percakapan?')) {
+            localStorage.removeItem('vdmaxChatHistory');
+            loadChatHistory(); // Memuat pesan default
+        }
+    });
 
     // Kirim dengan Enter (Shift+Enter untuk baris baru)
     messageInput.addEventListener('keydown', (event) => {
@@ -34,28 +67,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!prompt && !imageFile) return;
 
         displayUserMessage(prompt, imageFile);
+        saveChatHistory(); // Simpan chat setelah pesan pengguna ditambahkan
 
         const aiMessageElement = createMessageElement('ai');
         const aiContentElement = aiMessageElement.querySelector('.message-content');
         
-        chatForm.reset();
-        messageInput.style.height = 'auto';
-        imagePreviewContainer.innerHTML = '';
+        // --- PERBAIKAN BUG: Reset form dipindahkan ke sini ---
+        const formData = new FormData();
+        formData.append('prompt', prompt);
         
         if (imageFile) {
             const options = { maxSizeMB: 2, maxWidthOrHeight: 1920, useWebWorker: true };
             try {
                 aiContentElement.innerHTML = `<i>Mengompres gambar...</i>`;
-                imageFile = await imageCompression(imageFile, options);
+                const compressedFile = await imageCompression(imageFile, options);
+                formData.append('image', compressedFile, compressedFile.name);
             } catch (error) {
-                aiContentElement.innerHTML = `<p>Maaf, gagal mengompres gambar.</p>`;
+                aiContentElement.innerHTML = `<p>Maaf, gagal mengompres gambar.</p><p><small>${error.message}</small></p>`;
+                saveChatHistory();
                 return;
             }
         }
-
-        const formData = new FormData();
-        formData.append('prompt', prompt);
-        if (imageFile) formData.append('image', imageFile, imageFile.name);
+        
+        // Reset form SETELAH data diambil dan dikompres
+        chatForm.reset();
+        messageInput.style.height = 'auto';
+        imagePreviewContainer.innerHTML = '';
 
         try {
             const response = await fetch('/chat', { method: 'POST', body: formData });
@@ -82,10 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             aiContentElement.innerHTML = `<p>Maaf, terjadi kesalahan. Coba lagi nanti.</p><p><small>${error.message}</small></p>`;
             console.error('Error:', error);
+        } finally {
+            saveChatHistory(); // Simpan chat setelah AI selesai merespons
         }
     });
+    
+    // --- Inisialisasi Aplikasi ---
+    loadChatHistory();
 
-    // --- FUNGSI-FUNGSI PEMBANTU ---
+    // --- Fungsi-fungsi Pembantu ---
+    // ... (Fungsi-fungsi lain tetap sama, disertakan lagi di bawah untuk kelengkapan)
+
     function displayUserMessage(prompt, imageFile) {
         const userMessageElement = createMessageElement('user');
         const contentElement = userMessageElement.querySelector('.message-content');
@@ -98,18 +142,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function createMessageElement(role) {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${role}-message`);
-
         const avatar = document.createElement('div');
         avatar.classList.add('avatar', `${role}-avatar`);
         avatar.textContent = role === 'ai' ? 'AI' : 'U';
-
         const content = document.createElement('div');
         content.classList.add('message-content');
-        
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(content);
 
-        // --- LOGIKA BARU: Tambahkan Tombol Salin jika pesan dari AI ---
         if (role === 'ai') {
             const copyButton = document.createElement('button');
             copyButton.classList.add('copy-button');
@@ -118,17 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
             copyButton.innerHTML = copyIconSVG;
             
             copyButton.addEventListener('click', () => {
-                const textToCopy = content.innerText; // Gunakan innerText untuk mendapatkan teks bersih
+                const textToCopy = content.innerText;
                 navigator.clipboard.writeText(textToCopy).then(() => {
-                    // Beri feedback visual setelah berhasil menyalin
                     const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
                     copyButton.innerHTML = checkIconSVG;
-                    setTimeout(() => {
-                        copyButton.innerHTML = copyIconSVG; // Kembalikan ke ikon semula
-                    }, 2000);
-                }).catch(err => {
-                    console.error('Gagal menyalin teks: ', err);
-                });
+                    setTimeout(() => { copyButton.innerHTML = copyIconSVG; }, 2000);
+                }).catch(err => { console.error('Gagal menyalin teks: ', err); });
             });
             messageWrapper.appendChild(copyButton);
         }
