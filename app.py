@@ -76,29 +76,31 @@ def chat():
 def generate(prompt, task_type, base64_image, mime_type):
     model_to_use = ""
     status_message = ""
-    
     content_parts = []
     
-    # --- PERUBAHAN UTAMA DI SINI ---
-    # Logika untuk menyusun prompt berdasarkan jenis tugas
     if task_type == 'image_analysis':
         model_to_use = "gpt-4o"
         status_message = "Menganalisis gambar dengan Ahli Vision (gpt-4o)..."
 
-        # Membuat "Instruksi Master" untuk analisis detail
-        detailed_analysis_prompt = f"""
-        **Perintah Sistem:** Anda adalah seorang analis visual kelas dunia. Sebelum menjawab, lakukan analisis gambar yang diberikan secara diam-diam dan mendalam dengan mengikuti langkah-langkah berikut:
-        1.  **Identifikasi Objek & Subjek Utama:** Apa atau siapa subjek utama dalam gambar?
-        2.  **Analisis Latar Belakang & Lingkungan:** Di mana lokasi gambar? Apa saja elemen pendukung di sekitarnya?
-        3.  **Detail Spesifik & Atribut:** Perhatikan warna dominan, tekstur, pencahayaan (pagi/siang/malam), ekspresi wajah, pakaian, dan detail kecil lainnya.
-        4.  **Komposisi & Gaya Visual:** Bagaimana elemen-elemen diatur dalam gambar? Apakah ini foto profesional, selfie, lukisan, diagram, atau desain UI?
-        5.  **Interpretasi Konteks & Suasana:** Apa suasana (mood) dari gambar ini (ceria, sedih, profesional)? Apa kira-kira cerita atau kejadian yang sedang berlangsung?
+        # --- PERUBAHAN UTAMA: INTRUKSI MASTER BARU UNTUK OUTPUT TERSTRUKTUR ---
+        # Jika ada prompt dari pengguna, AI akan menjawabnya. Jika tidak, AI hanya akan memberikan analisis.
+        final_instruction = f"Setelah selesai, jawab permintaan pengguna berikut: '{prompt}'" if prompt else "Setelah selesai, berikan hanya hasil analisis poin-per-poin di atas."
 
-        Setelah Anda memahami gambar secara menyeluruh berdasarkan analisis di atas, jawablah permintaan spesifik dari pengguna di bawah ini. Pastikan jawaban Anda kaya akan detail yang Anda temukan.
+        structured_analysis_prompt = f"""
+        **Perintah Sistem:** Anda adalah analis visual yang sangat teliti. Analisis gambar yang diberikan dan jawab HANYA dalam format poin-per-poin (markdown list) berikut. Jangan gunakan format paragraf naratif.
 
-        **Permintaan Pengguna:** "{prompt}"
+        - **Subject:** [Deskripsikan subjek utama dan aksi yang sedang terjadi secara singkat]
+        - **Race/Ethnicity:** [Deskripsikan perkiraan ras atau etnis orang dalam gambar, jika dapat diidentifikasi secara visual dan relevan]
+        - **Pose:** [Deskripsikan pose atau posisi subjek]
+        - **Clothing:** [Rincikan pakaian yang dikenakan oleh setiap subjek]
+        - **Accessories:** [Sebutkan aksesori yang menonjol seperti jam tangan, kacamata, perhiasan, atau sertifikat]
+        - **Location:** [Deskripsikan latar belakang, lingkungan, dan lokasi kejadian]
+        - **Style:** [Deskripsikan gaya visual gambar: foto sinematik, candid, lukisan, desain UI, dll.]
+        - **Mood:** [Interpretasikan suasana atau mood keseluruhan dari gambar]
+
+        {final_instruction}
         """
-        content_parts.append({"type": "text", "text": detailed_analysis_prompt})
+        content_parts.append({"type": "text", "text": structured_analysis_prompt})
 
     elif task_type == 'coding':
         model_to_use = "gpt-4.1"
@@ -109,15 +111,12 @@ def generate(prompt, task_type, base64_image, mime_type):
         status_message = "Menyiapkan jawaban (gpt-4o-mini)..."
         content_parts.append({"type": "text", "text": prompt})
 
-    # Tambahkan data gambar ke dalam payload jika ada
     if base64_image and mime_type:
         content_parts.append({
             "type": "image_url",
             "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
         })
     
-    # --- AKHIR DARI PERUBAHAN UTAMA ---
-
     yield f"*{status_message}*\n\n"
     
     messages = [{"role": "user", "content": content_parts}]
