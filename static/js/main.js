@@ -38,56 +38,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const aiMessageElement = createMessageElement('ai');
         const aiContentElement = aiMessageElement.querySelector('.message-content');
         
-        // Reset form segera setelah pesan pengguna ditampilkan
         chatForm.reset();
         messageInput.style.height = 'auto';
         imagePreviewContainer.innerHTML = '';
         
-        // --- LOGIKA KOMPRESI DIMULAI DI SINI ---
         if (imageFile) {
-            const options = {
-                maxSizeMB: 2, // Paksa gambar maksimal 2MB
-                maxWidthOrHeight: 1920, // Ubah resolusi maksimal
-                useWebWorker: true
-            };
+            const options = { maxSizeMB: 2, maxWidthOrHeight: 1920, useWebWorker: true };
             try {
-                console.log(`Ukuran gambar asli: ${(imageFile.size / 1024 / 1024).toFixed(2)} MB`);
-                aiContentElement.innerHTML = `<i>Mengompres gambar...</i>`; // Pesan sementara
-                imageFile = await imageCompression(imageFile, options); // Kompres gambar
-                console.log(`Ukuran gambar setelah kompresi: ${(imageFile.size / 1024 / 1024).toFixed(2)} MB`);
+                aiContentElement.innerHTML = `<i>Mengompres gambar...</i>`;
+                imageFile = await imageCompression(imageFile, options);
             } catch (error) {
                 aiContentElement.innerHTML = `<p>Maaf, gagal mengompres gambar.</p>`;
-                console.error('Error saat kompresi:', error);
                 return;
             }
         }
-        // --- LOGIKA KOMPRESI SELESAI ---
 
         const formData = new FormData();
         formData.append('prompt', prompt);
-        if (imageFile) {
-            formData.append('image', imageFile, imageFile.name);
-        }
+        if (imageFile) formData.append('image', imageFile, imageFile.name);
 
         try {
-            const response = await fetch('/chat', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                // Tangkap error 413 dan berikan pesan yang lebih ramah
-                if (response.status === 413) {
-                    throw new Error(`Ukuran file terlalu besar bahkan setelah kompresi.`);
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            const response = await fetch('/chat', { method: 'POST', body: formData });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullResponse = '';
 
-            // Proses streaming
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -108,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Fungsi-fungsi pembantu
+    // --- FUNGSI-FUNGSI PEMBANTU ---
     function displayUserMessage(prompt, imageFile) {
         const userMessageElement = createMessageElement('user');
         const contentElement = userMessageElement.querySelector('.message-content');
@@ -121,13 +98,41 @@ document.addEventListener('DOMContentLoaded', () => {
     function createMessageElement(role) {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${role}-message`);
+
         const avatar = document.createElement('div');
         avatar.classList.add('avatar', `${role}-avatar`);
         avatar.textContent = role === 'ai' ? 'AI' : 'U';
+
         const content = document.createElement('div');
         content.classList.add('message-content');
+        
         messageWrapper.appendChild(avatar);
         messageWrapper.appendChild(content);
+
+        // --- LOGIKA BARU: Tambahkan Tombol Salin jika pesan dari AI ---
+        if (role === 'ai') {
+            const copyButton = document.createElement('button');
+            copyButton.classList.add('copy-button');
+            copyButton.title = 'Salin ke clipboard';
+            const copyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+            copyButton.innerHTML = copyIconSVG;
+            
+            copyButton.addEventListener('click', () => {
+                const textToCopy = content.innerText; // Gunakan innerText untuk mendapatkan teks bersih
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    // Beri feedback visual setelah berhasil menyalin
+                    const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    copyButton.innerHTML = checkIconSVG;
+                    setTimeout(() => {
+                        copyButton.innerHTML = copyIconSVG; // Kembalikan ke ikon semula
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Gagal menyalin teks: ', err);
+                });
+            });
+            messageWrapper.appendChild(copyButton);
+        }
+
         chatWindow.appendChild(messageWrapper);
         chatWindow.scrollTop = chatWindow.scrollHeight;
         return messageWrapper;
@@ -142,7 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const removeButton = document.createElement('button');
         removeButton.classList.add('remove-preview-button');
         removeButton.innerHTML = '&times;';
-        removeButton.title = 'Hapus Gambar';
         removeButton.onclick = () => {
             imageInput.value = '';
             imagePreviewContainer.innerHTML = '';
