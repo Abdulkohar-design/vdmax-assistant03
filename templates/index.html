@@ -10,16 +10,8 @@
     <div class="main-content">
         <header class="app-header">
             <div id="new-chat-button" class="header-title" title="Mulai chat baru">
-                VDMAX Asisten 1.0
+                <span>VDMAX Asisten 1.0</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
-            </div>
-            <div class="header-actions">
-                <button class="icon-header-btn" title="Bagikan (Segera Hadir)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-                </button>
-                <button class="icon-header-btn" title="Opsi Lain (Segera Hadir)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-                </button>
             </div>
         </header>
 
@@ -29,16 +21,17 @@
         <div class="chat-form-wrapper">
             <form class="chat-form" id="chat-form">
                 <div id="image-preview-container"></div>
-                <<div class="input-group">
-    <button type="button" id="upload-button" class="icon-button" title="Unggah File">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    </button>
-    <textarea id="message-input" placeholder="Ask anything..." rows="1"></textarea>
-    <input type="file" id="image-input" accept="image/*" style="display: none;">
-    <button type="submit" id="send-button" class="icon-button" title="Kirim" disabled>
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-    </button>
-</div>
+                
+                <div class="input-group">
+                    <button type="button" id="upload-button" class="icon-button" title="Unggah File">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                    <textarea id="message-input" placeholder="Ask anything..." rows="1"></textarea>
+                    <input type="file" id="image-input" accept="image/*" style="display: none;">
+                    <button type="submit" id="send-button" class="icon-button" title="Kirim" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 0 0-.926.94l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.405Z"/></svg>
+                    </button>
+                </div>
             </form>
             <p class="disclaimer">VDMAX Asisten dapat membuat kesalahan. Pertimbangkan untuk memeriksa informasi penting.</p>
         </div>
